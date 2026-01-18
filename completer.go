@@ -12,6 +12,16 @@ import (
 	"github.com/reeflective/console/internal/line"
 )
 
+const (
+	// defaultMaxHighlightRunes caps how many runes we feed to the syntax highlighter.
+	// Large inputs force readline to repaint the whole line on every keystroke;
+	// past this limit we skip highlighting to keep typing responsive (especially
+	// on high-latency SSH links). The value is intentionally generous so typical
+	// commands still get colored.
+	defaultMaxHighlightRunes = 2048
+	envMaxHighlightRunes     = "CONSOLE_MAX_HIGHLIGHT_RUNES"
+)
+
 func (c *Console) complete(input []rune, pos int) readline.Completions {
 	menu := c.activeMenu()
 
@@ -115,27 +125,46 @@ func (c *Console) justifyCommandComps(comps readline.Completions) readline.Compl
 
 // highlightSyntax - Entrypoint to all input syntax highlighting in the Wiregost console.
 func (c *Console) highlightSyntax(input []rune) string {
+	if len(input) == 0 {
+		return ""
+	}
+
+	// Avoid expensive parsing and ANSI rewriting on very long lines.
+	if c.MaxHighlightRunes > 0 && len(input) > c.MaxHighlightRunes {
+		return string(input)
+	}
+
 	// Split the line as shellwords
 	args, unprocessed, err := line.Split(string(input), true)
 	if err != nil {
 		args = append(args, unprocessed)
 	}
 
-	done := make([]string, 0)          // List of processed words, append to
-	remain := args                     // List of words to process, draw from
-	trimmed := line.TrimSpaces(remain) // Match stuff against trimmed words
-
-	// Highlight the root command when found.
-	cmd, _, _ := c.activeMenu().Find(trimmed)
-	if cmd != nil {
-		done, remain = line.HighlightCommand(done, args, c.activeMenu().Command, c.cmdHighlight)
+	if len(args) == 0 {
+		return string(input)
 	}
 
-	// Highlight command flags
-	done, remain = line.HighlightCommandFlags(done, remain, c.flagHighlight)
+	done := make([]string, 0, len(args)) // Processed words
+	remain := args                       // Words to process
+	changed := false
 
-	// Done with everything, add remainind, non-processed words
-	done = append(done, remain...)
+	// Highlight the root command when found (fast path, no cobra.Find walk).
+	done, remain, changed = line.HighlightCommand(done, args, c.activeMenu().Command, c.cmdHighlight)
+
+	// Highlight command flags
+	var flagChanged bool
+	done, remain, flagChanged = line.HighlightCommandFlags(done, remain, c.flagHighlight)
+	changed = changed || flagChanged
+
+	// Done with everything, add remaining, non-processed words
+	if len(remain) > 0 {
+		done = append(done, remain...)
+	}
+
+	// If we didn't apply any styling, avoid rebuilding the string.
+	if !changed {
+		return string(input)
+	}
 
 	// Join all words.
 	highlighted := strings.Join(done, "")

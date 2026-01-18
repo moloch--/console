@@ -50,9 +50,14 @@ func (c *Console) StartContext(ctx context.Context) error {
 
 		// Block and read user input.
 		input, err := c.shell.Readline()
+
+		c.displayPostRun(input)
+
 		if err != nil {
 			menu.handleInterrupt(err)
+
 			lastLine = input
+
 			continue
 		}
 
