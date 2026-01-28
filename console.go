@@ -2,8 +2,6 @@ package console
 
 import (
 	"fmt"
-	"os"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -27,8 +25,6 @@ type Console struct {
 	isExecuting   bool             // Used by log functions, which need to adapt behavior (print the prompt, etc.)
 	printed       bool             // Used to adjust asynchronous messages too.
 	mutex         *sync.RWMutex    // Concurrency management.
-	// Highlighter tuning
-	MaxHighlightRunes int // Upper bound for syntax-highlighted runes; 0 disables the cap.
 
 	// Execution
 
@@ -87,12 +83,6 @@ func New(app string) *Console {
 		menus: make(map[string]*Menu),
 		mutex: &sync.RWMutex{},
 	}
-	console.MaxHighlightRunes = defaultMaxHighlightRunes
-	if env := os.Getenv(envMaxHighlightRunes); env != "" {
-		if n, err := strconv.Atoi(env); err == nil && n >= 0 {
-			console.MaxHighlightRunes = n
-		}
-	}
 
 	// Quality of life improvements.
 	console.setupShell()
@@ -108,10 +98,10 @@ func New(app string) *Console {
 	}
 
 	// Syntax highlighting, multiline callbacks, etc.
-	console.cmdHighlight = line.GreenFG
-	console.flagHighlight = line.BrightWhiteFG
+	console.cmdHighlight = line.GreenFG 
+	console.flagHighlight = line.BrightWhiteFG 
 	console.shell.AcceptMultiline = line.AcceptMultiline
-	console.shell.SyntaxHighlighter = console.highlightSyntax
+	console.shell.SyntaxHighlighter = console.highlightSyntax 
 
 	// Completion
 	console.shell.Completer = console.complete
@@ -129,6 +119,7 @@ func (c *Console) Shell() *readline.Shell {
 	return c.shell
 }
 
+
 //
 // Settings & Initialisation Functions ------------------------------------------------------------- //
 //
@@ -138,7 +129,7 @@ func (c *Console) SetPrintLogo(f func(c *Console)) {
 	c.printLogo = f
 }
 
-// SetDefaultCommandHighlight allows the user to change the highlight color for
+// SetDefaultCommandHighlight allows the user to change the highlight color for 
 // a command in the default syntax highlighter using an ansi code.
 // This action has no effect if a custom syntax highlighter for the shell is set.
 // By default, the highlight code is green ("\x1b[32m").
@@ -146,22 +137,12 @@ func (c *Console) SetDefaultCommandHighlight(seq string) {
 	c.cmdHighlight = seq
 }
 
-// SetDefaultFlagHighlight allows the user to change the highlight color for
+// SetDefaultFlagHighlight allows the user to change the highlight color for 
 // a flag in the default syntax highlighter using an ansi color code.
 // This action has no effect if a custom syntax highlighter for the shell is set.
 // By default, the highlight code is grey ("\x1b[38;05;244m").
 func (c *Console) SetDefaultFlagHighlight(seq string) {
 	c.flagHighlight = seq
-}
-
-// SetMaxHighlightRunes lets callers tune the syntax highlight cap at runtime.
-// A value of 0 disables the cap; a negative value leaves the current setting unchanged.
-func (c *Console) SetMaxHighlightRunes(n int) {
-	if n < 0 {
-		return
-	}
-
-	c.MaxHighlightRunes = n
 }
 
 //

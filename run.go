@@ -33,8 +33,6 @@ func (c *Console) StartContext(ctx context.Context) error {
 	lastLine := "" // used to check if last read line is empty.
 
 	for {
-		// Print a newline after the last output if NewlineAfter is true
-		// and the last line was not empty.
 		c.displayPostRun(lastLine)
 
 		// Always ensure we work with the active menu, with freshly
@@ -49,14 +47,14 @@ func (c *Console) StartContext(ctx context.Context) error {
 		}
 
 		// Block and read user input.
-		input, err := c.shell.Readline()
+		input , err := c.shell.Readline()
 
 		c.displayPostRun(input)
 
 		if err != nil {
 			menu.handleInterrupt(err)
 
-			lastLine = input
+			lastLine = input 
 
 			continue
 		}
@@ -74,7 +72,7 @@ func (c *Console) StartContext(ctx context.Context) error {
 		}
 
 		if len(args) == 0 {
-			lastLine = input
+			lastLine = input 
 			continue
 		}
 
@@ -86,10 +84,6 @@ func (c *Console) StartContext(ctx context.Context) error {
 			continue
 		}
 
-		// Print a newline before executing the command if NewlineBefore is true
-		// and the last line was not empty.
-		c.displayPreRun(input)
-
 		// Run all pre-run hooks and the command itself
 		// Don't check the error: if its a cobra error,
 		// the library user is responsible for setting
@@ -99,7 +93,7 @@ func (c *Console) StartContext(ctx context.Context) error {
 			menu.ErrorHandler(ExecutionError{newError(err, "")})
 		}
 
-		lastLine = input
+		lastLine = input 
 	}
 }
 

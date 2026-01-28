@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	// Base text effects.
+    // Base text effects.
 	Reset      = "\x1b[0m"
 	Bold       = "\x1b[1m"
 	Dim        = "\x1b[2m"
@@ -23,21 +23,20 @@ var (
 	BlinkReset      = "\x1b[25m"
 	ReverseReset    = "\x1b[27m"
 
-	// Colors
-	GreenFG       = "\x1b[32m"
-	YellowFG      = "\x1b[33m"
-	ResetFG       = "\x1b[39m"
+    // Colors
+	GreenFG  = "\x1b[32m"
+	YellowFG = "\x1b[33m"
+	ResetFG  = "\x1b[39m"
 	BrightWhiteFG = "\x1b[38;05;244m"
 )
 
 // HighlightCommand applies highlighting to commands in an input line.
-func HighlightCommand(done, args []string, root *cobra.Command, cmdColor string) ([]string, []string, bool) {
+func HighlightCommand(done, args []string, root *cobra.Command, cmdColor string) ([]string, []string) {
 	highlighted := make([]string, 0)
 	var rest []string
-	changed := false
 
 	if len(args) == 0 {
-		return done, args, changed
+		return done, args
 	}
 
 	// Highlight the root command when found, or any of its aliases.
@@ -45,42 +44,38 @@ func HighlightCommand(done, args []string, root *cobra.Command, cmdColor string)
 		// Change 1: Highlight based on first arg in usage rather than the entire usage itself
 		cmdFound := strings.Split(cmd.Use, " ")[0] == strings.TrimSpace(args[0])
 
-		if slices.Contains(cmd.Aliases, strings.TrimSpace(args[0])) {
-			cmdFound = true
-			break
+        if slices.Contains(cmd.Aliases, strings.TrimSpace(args[0])) {
+				cmdFound = true
+				break
 		}
 
 		if cmdFound {
 			highlighted = append(highlighted, Bold+cmdColor+args[0]+ResetFG+BoldReset)
 			rest = args[1:]
 
-			changed = true
-
-			return append(done, highlighted...), rest, changed
+			return append(done, highlighted...), rest
 		}
 	}
 
-	return append(done, highlighted...), args, changed
+	return append(done, highlighted...), args
 }
 
 // HighlightCommand applies highlighting to command flags in an input line.
-func HighlightCommandFlags(done, args []string, flagColor string) ([]string, []string, bool) {
+func HighlightCommandFlags(done, args []string, flagColor string) ([]string, []string) {
 	highlighted := make([]string, 0)
 	var rest []string
-	changed := false
 
 	if len(args) == 0 {
-		return done, args, changed
+		return done, args
 	}
 
 	for _, arg := range args {
 		if strings.HasPrefix(arg, "-") || strings.HasPrefix(arg, "--") {
 			highlighted = append(highlighted, Bold+flagColor+arg+ResetFG+BoldReset)
-			changed = true
 		} else {
 			highlighted = append(highlighted, arg)
 		}
 	}
 
-	return append(done, highlighted...), rest, changed
+	return append(done, highlighted...), rest
 }
